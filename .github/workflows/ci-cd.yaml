@@ -80,6 +80,8 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.PEM_KEY }}
           script: |
+            docker login -u AWS -p $(aws ecr get-login-password --region ${{ vars.AWS_REGION }}) ${{ secrets.REPO_URL }}
+
             docker pull ${{ secrets.REPO_URL }}:latest
 
             docker stop ${{ vars.CONTAINER_NAME }} || true
