@@ -56,23 +56,3 @@ jobs:
           docker build -t "$IMAGE:${{ steps.meta.outputs.tag }}" -t "$IMAGE:latest" .
           docker push "$IMAGE:${{ steps.meta.outputs.tag }}"
           docker push "$IMAGE:latest"
-
-  update-manifests:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install kustomize
-        run: |
-          curl -sfLo /tmp/k.tgz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
-          sudo tar -xzf /tmp/k.tgz -C /usr/local/bin
-      - name: Bump image tag (GitOps)
-        run: |
-          cd k8s
-          kustomize edit set image stackit-churn-app="$IMAGE:${{ needs.build-and-push.outputs.tag }}"
-      - name: Commit and push
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "ci: deploy ${IMAGE}:${{ needs.build-and-push.outputs.tag }}" || echo "no changes"
-          git push
