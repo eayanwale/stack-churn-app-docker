@@ -90,6 +90,6 @@ jobs:
             docker run -d \
               --name ${{ vars.CONTAINER_NAME }} -p 80:8080 \
               --restart unless-stopped \
-              ${{ vars.ECR_REPO }}:latest
+              ${{ secrets.REPO_URL }}:latest
 
             docker image prune -f
