@@ -91,6 +91,6 @@ jobs:
               --name ${{ vars.CONTAINER_NAME }} \
               -p 80:8080 \
               --restart always \
-              ${{ secrets.REPO_URL }}:latest
+              ${{ secrets.ECR_REPO }}:latest
 
             docker image prune -f
