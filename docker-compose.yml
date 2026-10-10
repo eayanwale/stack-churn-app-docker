@@ -1,0 +1,17 @@
+# Optional convenience wrapper for local runs and simple EC2 deploys.
+#   docker compose up -d --build
+services:
+  churn-app:
+    build: .
+    image: stackit-churn-app:latest
+    container_name: stackit-churn-app
+    ports:
+      - "80:8080"            # serve on port 80 of the EC2 host
+    environment:
+      INFERENCE_MODE: ${INFERENCE_MODE:-local}
+      # --- set these two to switch to AWS SageMaker inference ---
+      # INFERENCE_MODE: aws
+      SAGEMAKER_ENDPOINT_NAME: ${SAGEMAKER_ENDPOINT_NAME:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      CHURN_THRESHOLD: ${CHURN_THRESHOLD:-0.5}
+    restart: unless-stopped

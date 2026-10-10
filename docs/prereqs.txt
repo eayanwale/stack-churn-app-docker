@@ -1,0 +1,3 @@
+[ ] - stackprog-dev account
+[ ] - EC2 key pair
+[ ] - git repository
