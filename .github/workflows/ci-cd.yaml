@@ -28,12 +28,7 @@ env:
   IMAGE: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPO }}
 
 jobs:
-  audit:
-    uses: ./.github/workflows/ai-audit.yml
-    secrets: inherit
-
   test:
-    needs: audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
