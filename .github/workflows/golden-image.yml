@@ -1,0 +1,40 @@
+name: Golden Image Build
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "packer/**"
+      - ".github/workflows/golden-image.yml"
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  id-token: write      # OIDC token for AWS auth
+  contents: write      # push the GitOps manifest bump
+
+jobs:
+  hcp-packer:
+    runs-on: ubuntu-latest
+    name: Run Packer
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup `packer`
+        uses: hashicorp/setup-packer@main
+        id: setup
+        with:
+          version: "latest"
+
+      - name: Run `packer init`
+        id: init
+        run: "packer init packer/${{ secrets.PACKER_FILE }}"
+
+      - name: Run `packer validate`
+        id: validate
+        run: "packer validate packer/${{ secrets.PACKER_FILE }}"
+
+      - name: Build Artifact
+        run: packer build -color=false -on-error=abort packer/${{ secrets.PACKER_FILE }}

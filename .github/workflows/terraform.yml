@@ -1,0 +1,95 @@
+name: Terraform Deployment
+
+# The last step of every deploy path:
+#   app push:        ci-cd (build & push image) -> here (apply + instance refresh)
+#   golden image:    Golden Image Build -> here (apply; new AMI auto-refreshes)
+#   infra change:    push to terraform/** -> here (apply)
+# New instances run user-data, which pulls :latest from ECR.
+
+on:
+  workflow_run:
+    workflows: ["Golden Image Build", "ci-cd"] # Must match the exact workflow names
+    types:
+      - completed
+  push:
+    branches: [ main ]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write      # OIDC token for AWS auth
+  contents: write      # push the GitOps manifest bump
+
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
+env:
+  ASG_NAME: stackit-churn-app-asg # aws_autoscaling_group.churn-app-asg in terraform/main.tf
+
+jobs:
+  terraform:
+    # Skip when triggered by a failed/cancelled upstream workflow
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-ecr-push
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Check whether the ASG already exists
+        id: asg
+        run: |
+          count=$(aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names "$ASG_NAME" \
+            --query 'length(AutoScalingGroups)' --output text)
+          echo "existed=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Roll instances onto the new app image
+        if: github.event.workflow_run.name == 'ci-cd' && steps.asg.outputs.existed == 'true'
+        run: |
+          active=$(aws autoscaling describe-instance-refreshes \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --query "length(InstanceRefreshes[?Status=='Pending' || Status=='InProgress'])" \
+            --output text)
+          if [ "$active" -gt 0 ]; then
+            echo "Instance refresh already in progress; it will pick up the new image."
+            exit 0
+          fi
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":120,"AutoRollback":true}'
