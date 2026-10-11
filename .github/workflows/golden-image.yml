@@ -15,7 +15,12 @@ permissions:
   contents: write      # push the GitOps manifest bump
 
 jobs:
+  audit:
+    uses: ./.github/workflows/ai-audit.yml
+    secrets: inherit
+
   hcp-packer:
+    needs: audit
     runs-on: ubuntu-latest
     name: Run Packer
     steps:
