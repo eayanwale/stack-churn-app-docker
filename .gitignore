@@ -5,3 +5,7 @@ __pycache__/
 *.png
 *.pdf
 *.jpg
+.terraform/
+*.exe
+terraform.tfstate
+.terraform.lock.hcl
