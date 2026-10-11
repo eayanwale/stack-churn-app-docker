@@ -18,6 +18,7 @@ on:
 permissions:
   id-token: write      # OIDC token for AWS auth
   contents: write      # push the GitOps manifest bump
+  actions: read        # list Golden Image runs before applying
 
 concurrency:
   group: terraform
@@ -38,6 +39,28 @@ jobs:
         working-directory: ./terraform
 
     steps:
+      # A push touching both ci-cd and packer paths starts both workflows;
+      # ci-cd can finish first. Never apply while a golden image build is
+      # queued or running - its own completion will trigger this workflow.
+      - name: Wait for any running Golden Image Build
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 90); do
+            active=$(gh run list --repo "$GITHUB_REPOSITORY" \
+              --workflow golden-image.yml --limit 20 \
+              --json status --jq '[.[] | select(.status=="in_progress" or .status=="queued" or .status=="waiting" or .status=="pending")] | length')
+            if [ "$active" -eq 0 ]; then
+              echo "No Golden Image Build in progress."
+              exit 0
+            fi
+            echo "Golden Image Build still running ($active); waiting 60s..."
+            sleep 60
+          done
+          echo "Timed out waiting for Golden Image Build" >&2
+          exit 1
+
       - name: Checkout source code
         uses: actions/checkout@v4
 
