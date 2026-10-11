@@ -3,19 +3,16 @@ name: Terraform Deployment
 # The last step of every deploy path:
 #   app push:        ci-cd (build & push image) -> here (apply + instance refresh)
 #   golden image:    Golden Image Build -> here (apply; new AMI auto-refreshes)
-#   infra change:    push to terraform/** -> here (apply)
+#   infra change:    push to terraform/** -> ci-cd -> here
 # New instances run user-data, which pulls :latest from ECR.
+# No push trigger on purpose: Terraform only ever runs after an upstream
+# workflow finishes, never alongside one.
 
 on:
   workflow_run:
     workflows: ["Golden Image Build", "ci-cd"] # Must match the exact workflow names
     types:
       - completed
-  push:
-    branches: [ main ]
-    paths:
-      - "terraform/**"
-      - ".github/workflows/terraform.yml"
   workflow_dispatch:
 
 permissions:
