@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+touch /var/log/user-data.log
+exec > /var/log/user-data.log 2>&1
+
+AWS_REGION="${aws_region}"
+REPO_URL="${repo_url}"
+CONTAINER_NAME="${container_name}"
+REGISTRY=$(echo "$REPO_URL" | cut -d/ -f1)
+
+aws ecr get-login-password --region "$AWS_REGION" | docker login -u AWS --password-stdin "$REGISTRY"
+
+docker pull "$REPO_URL:latest"
+
+docker stop "$CONTAINER_NAME" || true
+docker rm "$CONTAINER_NAME" || true
+
+docker run -d \
+    --name "$CONTAINER_NAME" -p 80:8080 \
+    --restart unless-stopped \
+    "$REPO_URL:latest"
+
+docker image prune -f
