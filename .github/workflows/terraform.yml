@@ -50,6 +50,12 @@ jobs:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-ecr-push
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8   # or whatever version you're using locally
+          terraform_wrapper: false
+
       - name: Terraform Init
         run: terraform init
 
