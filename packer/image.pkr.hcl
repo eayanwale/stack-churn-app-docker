@@ -12,7 +12,7 @@ variable "aws_source_ami" {
 }
 
 variable "aws_instance_type" {
-  default = "t2.small"
+  default = "t2.micro"
 }
 
 variable "ami_name" {

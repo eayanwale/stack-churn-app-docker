@@ -1,4 +1,4 @@
 provider "aws" {
-  region  = var.AWS_REGION
-#   profile = "stackprog-dev"
+  region = var.AWS_REGION
+  #   profile = "stackprog-dev"
 }
