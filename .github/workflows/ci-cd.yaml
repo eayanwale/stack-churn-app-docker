@@ -1,5 +1,5 @@
 # CI/CD for the STACK IT Customer Churn app.
-# On every app push to main:  test -> build & push image to Amazon ECR.
+# On every app or terraform push to main:  test -> build & push image to Amazon ECR.
 # When this succeeds, terraform.yml runs and rolls the instances onto the
 # new :latest image (terraform/user-data.tftpl pulls it at boot).
 #
@@ -13,11 +13,9 @@ name: ci-cd
 on:
   push:
     branches: [ main ]
-    paths-ignore:
+    paths-ignore:   # packer-only changes go through golden-image.yml instead
       - "packer/**"
-      - "terraform/**"
       - ".github/workflows/golden-image.yml"
-      - ".github/workflows/terraform.yml"
   workflow_dispatch:
 
 permissions:
