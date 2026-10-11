@@ -5,6 +5,6 @@ terraform {
     bucket  = "enoch-tf-state-bucket"
     key     = "stackit-churn-app/terraform.tfstate"
     region  = "us-east-1"
-    profile = "stackprog-dev"
+    # profile = "stackprog-dev"
   }
 }
