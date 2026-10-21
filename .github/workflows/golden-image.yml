@@ -6,9 +6,7 @@ on:
     paths:
       - "packer/**"
       - ".github/workflows/golden-image.yml"
-  schedule:
-    - cron: "0 6 * * 1"
-  workflow_dispatch:
+  workflow_dispatch:   # run manually from the Actions tab when a fresh image is needed
 
 permissions:
   id-token: write      # OIDC token for AWS auth
